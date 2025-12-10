@@ -1,8 +1,9 @@
 import 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import SplashScreen from './src/components/SplashScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import DetailsScreen from './src/screens/DetailsScreen';
 
@@ -11,19 +12,18 @@ const Stack = createNativeStackNavigator();
 export default function App() {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Home">
+      <Stack.Navigator
+        initialRouteName="Splash"
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
+        <Stack.Screen name="Splash" component={SplashScreen} />
         <Stack.Screen
           name="Home"
           component={HomeScreen}
           options={{
-            title: 'Welcome',
-            headerStyle: {
-              backgroundColor: '#6366f1',
-            },
-            headerTintColor: '#fff',
-            headerTitleStyle: {
-              fontWeight: 'bold',
-            },
+            headerShown: false,
           }}
         />
         <Stack.Screen
@@ -32,7 +32,7 @@ export default function App() {
           options={{
             title: 'Details',
             headerStyle: {
-              backgroundColor: '#6366f1',
+              backgroundColor: '#0A6EBD',
             },
             headerTintColor: '#fff',
             headerTitleStyle: {
@@ -41,7 +41,7 @@ export default function App() {
           }}
         />
       </Stack.Navigator>
-      <StatusBar style="auto" />
+      <StatusBar style="light" backgroundColor="#0A6EBD" />
     </NavigationContainer>
   );
 }

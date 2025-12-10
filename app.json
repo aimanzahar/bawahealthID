@@ -1,31 +1,31 @@
 {
   "expo": {
-    "name": "Expo Template",
-    "slug": "expo-template",
+    "name": "BawaHealth",
+    "slug": "bawahealth",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/unnamed.jpg",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "image": "./assets/unnamed.jpg",
+      "resizeMode": "cover",
+      "backgroundColor": "#0A6EBD"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourcompany.expotemplate"
+      "bundleIdentifier": "com.bawahealth.app"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/unnamed.jpg",
+        "backgroundColor": "#0A6EBD"
       },
-      "package": "com.yourcompany.expotemplate"
+      "package": "com.bawahealth.app"
     },
     "plugins": [],
-    "scheme": "expo-template"
+    "scheme": "bawahealth"
   }
 }
