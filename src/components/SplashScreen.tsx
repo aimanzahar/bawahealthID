@@ -29,9 +29,9 @@ const SplashScreen: React.FC = () => {
       }),
     ]).start();
 
-    // Navigate to home after 3 seconds
+    // Navigate to Main (auth flow) after 3 seconds
     const timer = setTimeout(() => {
-      navigation.replace('Home');
+      navigation.replace('Main');
     }, 3000);
 
     return () => clearTimeout(timer);

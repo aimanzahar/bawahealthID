@@ -11,9 +11,10 @@ import {
   StatusBar,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/types';
+import { RootStackParamList } from '../types/navigation';
 import Logo from '../components/Logo';
 import MalaysiaDigitalIDButton from '../components/MalaysiaDigitalIDButton';
+import { useAuth } from '../contexts/AuthContext';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -21,6 +22,7 @@ const { width, height } = Dimensions.get('window');
 
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const { user, logout } = useAuth();
 
   const handleMalaysiaIDLogin = () => {
     setIsLoading(true);
@@ -39,6 +41,26 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         ]
       );
     }, 2000);
+  };
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            await logout();
+          },
+        },
+      ]
+    );
   };
 
   const quickActions = [
@@ -98,9 +120,14 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.headerContent}>
             <Logo size={70} showText={false} />
             <View style={styles.headerText}>
-              <Text style={styles.greeting}>Good Morning!</Text>
+              <Text style={styles.greeting}>
+                {user ? `Hello, ${user.name || 'User'}!` : 'Good Morning!'}
+              </Text>
               <Text style={styles.welcomeText}>Welcome to BawaHealth</Text>
             </View>
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+              <Text style={styles.logoutText}>Logout</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -254,6 +281,17 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
     letterSpacing: 0.5,
+  },
+  logoutButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  logoutText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
   content: {
     flex: 1,
