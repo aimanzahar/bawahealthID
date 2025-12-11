@@ -6,6 +6,7 @@ import RegisterScreen from '../screens/RegisterScreen';
 import MyDigitalIdRegisterScreen from '../screens/MyDigitalIdRegisterScreen';
 import MyDigitalIdLoginScreen from '../screens/MyDigitalIdLoginScreen';
 import HomeScreen from '../screens/HomeScreen';
+import HospitalFinderScreen from '../screens/HospitalFinderScreen';
 import HealthProfileSetup from '../screens/HealthProfileSetup';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 
@@ -52,7 +53,10 @@ export const AuthNavigator = () => {
           {!profileCompleted ? (
             <Stack.Screen name="HealthProfileSetup" component={HealthProfileSetup} />
           ) : (
-            <Stack.Screen name="Home" component={HomeScreen} />
+            <>
+              <Stack.Screen name="Home" component={HomeScreen} />
+              <Stack.Screen name="HospitalFinder" component={HospitalFinderScreen} options={{ headerShown: false }} />
+            </>
           )}
         </>
       ) : (

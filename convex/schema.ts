@@ -51,4 +51,36 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_status", ["verificationStatus"])
     .index("by_nric", ["nricNumber"]),
+
+  hospitals: defineTable({
+    name: v.string(),
+    type: v.union(
+      v.literal("government"),
+      v.literal("private"),
+      v.literal("clinic"),
+      v.literal("specialist")
+    ),
+    address: v.string(),
+    city: v.string(),
+    state: v.string(),
+    postalCode: v.string(),
+    latitude: v.number(),
+    longitude: v.number(),
+    phoneNumber: v.optional(v.string()),
+    emergencyNumber: v.optional(v.string()),
+    website: v.optional(v.string()),
+    email: v.optional(v.string()),
+    operatingHours: v.optional(v.string()),
+    is24Hours: v.boolean(),
+    hasEmergency: v.boolean(),
+    specialties: v.optional(v.array(v.string())),
+    facilities: v.optional(v.array(v.string())),
+    rating: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_city", ["city"])
+    .index("by_state", ["state"])
+    .index("by_type", ["type"])
+    .index("by_emergency", ["hasEmergency"]),
 });

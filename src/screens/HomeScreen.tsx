@@ -71,7 +71,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       title: 'Find Hospitals',
       subtitle: 'Locate nearby healthcare facilities',
       color: '#2196F3',
-      onPress: () => navigation.navigate('Details', { itemId: 'hospitals' }),
+      onPress: () => navigation.navigate('HospitalFinder'),
     },
     {
       id: '2',

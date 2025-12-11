@@ -16,16 +16,38 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.bawahealth.app"
+      "bundleIdentifier": "com.bawahealth.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "BawaHealth needs access to your location to find nearby hospitals and healthcare facilities.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "BawaHealth needs access to your location to find nearby hospitals and healthcare facilities."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/unnamed.jpg",
         "backgroundColor": "#0A6EBD"
       },
-      "package": "com.bawahealth.app"
+      "package": "com.bawahealth.app",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAlSs3mFs9ilo7j-L9nxzxsGZDK-syWV-o"
+        }
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
     },
-    "plugins": [],
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "BawaHealth needs access to your location to find nearby hospitals and healthcare facilities.",
+          "locationAlwaysPermission": "BawaHealth needs access to your location to find nearby hospitals and healthcare facilities.",
+          "locationWhenInUsePermission": "BawaHealth needs access to your location to find nearby hospitals and healthcare facilities."
+        }
+      ]
+    ],
     "scheme": "bawahealth"
   }
 }

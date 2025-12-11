@@ -5,4 +5,6 @@ export type RootStackParamList = {
   MyDigitalIdRegister: undefined;
   HealthProfileSetup: undefined;
   Home: undefined;
+  HospitalFinder: undefined;
+  Details: { itemId: string };
 };
