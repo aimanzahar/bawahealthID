@@ -43,13 +43,13 @@ const MyDigitalIdLoginScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  const formatNric = (text: string) => {
-    // Format as XXXXXX-XX-XXXX
-    const cleaned = text.replace(/[^\d]/g, '');
-    if (cleaned.length <= 6) return cleaned;
-    if (cleaned.length <= 8) return `${cleaned.slice(0, 6)}-${cleaned.slice(6)}`;
-    return `${cleaned.slice(0, 6)}-${cleaned.slice(6, 8)}-${cleaned.slice(8, 12)}`;
-  };
+  // const formatNric = (text: string) => {
+  //   // Format as XXXXXX-XX-XXXX
+  //   const cleaned = text.replace(/[^\d]/g, '');
+  //   if (cleaned.length <= 6) return cleaned;
+  //   if (cleaned.length <= 8) return `${cleaned.slice(0, 6)}-${cleaned.slice(6)}`;
+  //   return `${cleaned.slice(0, 6)}-${cleaned.slice(6, 8)}-${cleaned.slice(8, 12)}`;
+  // };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -75,11 +75,11 @@ const MyDigitalIdLoginScreen: React.FC<Props> = ({ navigation }) => {
               <Text style={styles.label}>NRIC Number</Text>
               <TextInput
                 style={styles.input}
-                placeholder="XXXXXX-XX-XXXX"
+                placeholder="XXXXXXXXXXXX"
                 value={nricNumber}
-                onChangeText={(text) => setNricNumber(formatNric(text))}
+                onChangeText={setNricNumber}
                 keyboardType="numeric"
-                maxLength={14}
+                maxLength={12}
               />
             </View>
 

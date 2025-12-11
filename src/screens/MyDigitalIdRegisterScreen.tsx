@@ -17,7 +17,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 import { convex } from '../convex/client';
-import { api } from '../convex/_generated/api';
+// FIX: Import from the correct Convex-generated API file
+import { api } from '../../convex/_generated/api';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MyDigitalIdRegister'>;
 
@@ -76,8 +77,7 @@ const MyDigitalIdRegisterScreen: React.FC<Props> = ({ navigation }) => {
   const formatPhoneNumber = (text: string) => {
     const cleaned = text.replace(/[^\d]/g, '');
     if (cleaned.length <= 3) return cleaned;
-    if (cleaned.length <= 7) return `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
-    return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 7)}-${cleaned.slice(7, 11)}`;
+    return `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
   };
 
   const handleNext = () => {
@@ -109,58 +109,76 @@ const MyDigitalIdRegisterScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleSubmit = async () => {
+    console.log('[MyDigitalIdRegister] handleSubmit() called');
+    console.log('[MyDigitalIdRegister] Form data - email:', email, 'fullName:', fullName);
+    
     if (!password || !confirmPassword) {
+      console.log('[MyDigitalIdRegister] Validation failed: password or confirmPassword empty');
       Alert.alert('Error', 'Please enter and confirm your password');
       return;
     }
 
     if (password !== confirmPassword) {
+      console.log('[MyDigitalIdRegister] Validation failed: passwords do not match');
       Alert.alert('Error', 'Passwords do not match');
       return;
     }
 
     if (password.length < 8) {
+      console.log('[MyDigitalIdRegister] Validation failed: password too short');
       Alert.alert('Error', 'Password must be at least 8 characters');
       return;
     }
 
+    console.log('[MyDigitalIdRegister] Validation passed, starting registration');
     setLoading(true);
     try {
-      // Create user account
-      await register(email, password, fullName);
+      // Create user account and capture returned user data directly (fixes stale closure)
+      console.log('[MyDigitalIdRegister] Calling register() function...');
+      const registeredUser = await register(email, password, fullName);
+      console.log('[MyDigitalIdRegister] register() returned:', registeredUser._id);
 
-      // Submit MyDigital ID application
-      if (user) {
-        await convex.mutation(api.myDigitalId.createApplication, {
-          userId: user._id,
-          fullName,
-          nricNumber,
-          dateOfBirth,
-          gender,
-          nationality,
-          address,
-          city,
-          postalCode,
-          state,
-          phoneNumber,
-          email,
-        });
+      // Use returned user data directly - no timeout needed, no stale closure issue
+      console.log('[MyDigitalIdRegister] Creating MyDigital ID application...');
+      console.log('[MyDigitalIdRegister] userId:', registeredUser._id);
+      
+      await convex.mutation(api.myDigitalId.createApplication, {
+        userId: registeredUser._id,
+        fullName,
+        nricNumber,
+        dateOfBirth,
+        gender,
+        nationality,
+        address,
+        city,
+        postalCode,
+        state,
+        phoneNumber,
+        email,
+      });
+      
+      console.log('[MyDigitalIdRegister] Application created successfully');
 
-        Alert.alert(
-          'Application Submitted',
-          'Your MyDigital ID application has been submitted successfully. You will receive a notification once it is verified.',
-          [
-            {
-              text: 'OK',
-              onPress: () => navigation.navigate('Home'),
+      Alert.alert(
+        'Application Submitted',
+        'Your MyDigital ID application has been submitted successfully. You will receive a notification once it is verified.',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              console.log('[MyDigitalIdRegister] Navigating to Home');
+              navigation.navigate('Home');
             },
-          ]
-        );
-      }
+          },
+        ]
+      );
     } catch (error: any) {
-      Alert.alert('Registration Failed', error.message);
+      console.error('[MyDigitalIdRegister] Error:', error.message);
+      console.error('[MyDigitalIdRegister] Full error:', error);
+      Alert.alert('Registration Failed', error.message || 'Unknown error occurred');
     } finally {
       setLoading(false);
+      console.log('[MyDigitalIdRegister] handleSubmit() completed');
     }
   };
 
@@ -183,11 +201,11 @@ const MyDigitalIdRegisterScreen: React.FC<Props> = ({ navigation }) => {
         <Text style={styles.label}>NRIC Number</Text>
         <TextInput
           style={styles.input}
-          placeholder="XXXXXX-XX-XXXX"
+          placeholder="XXXXXXXXXXXX"
           value={nricNumber}
-          onChangeText={(text) => setNricNumber(formatNric(text))}
+          onChangeText={setNricNumber}
           keyboardType="numeric"
-          maxLength={14}
+          maxLength={12}
         />
       </View>
 
@@ -247,11 +265,11 @@ const MyDigitalIdRegisterScreen: React.FC<Props> = ({ navigation }) => {
         <Text style={styles.label}>Mobile Number</Text>
         <TextInput
           style={styles.input}
-          placeholder="XXX-XXXX-XXXX"
+          placeholder="XXX-XXXXXXX"
           value={phoneNumber}
           onChangeText={(text) => setPhoneNumber(formatPhoneNumber(text))}
           keyboardType="phone-pad"
-          maxLength={12}
+          maxLength={11}
         />
       </View>
 

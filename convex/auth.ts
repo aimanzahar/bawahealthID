@@ -39,6 +39,30 @@ export const signIn = mutation({
     password: v.string(),
   },
   handler: async (ctx, args) => {
+    // Check if this is a MyDigital ID login (email ends with @mydigitalid.gov.my)
+    if (args.email.endsWith("@mydigitalid.gov.my")) {
+      // Extract NRIC number from email (remove the domain)
+      const nricNumber = args.email.replace("@mydigitalid.gov.my", "");
+
+      // Find the MyDigital ID application with this NRIC using the index
+      const application = await ctx.db
+        .query("myDigitalIdApplications")
+        .withIndex("by_nric", (q) => q.eq("nricNumber", nricNumber))
+        .first();
+
+      if (!application) {
+        throw new Error("MyDigital ID not found. Please register first.");
+      }
+
+      // Get the user ID from the application
+      const userId = application.userId;
+
+      // For now, accept any password for MyDigital ID login (implement proper verification later)
+      // In production, you'd verify against MyDigital ID system
+      return userId;
+    }
+
+    // Regular email login
     const user = await ctx.db
       .query("users")
       .withIndex("by_email", (q) => q.eq("email", args.email))

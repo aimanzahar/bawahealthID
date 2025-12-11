@@ -36,5 +36,6 @@ export default defineSchema({
     rejectionReason: v.optional(v.string()),
   })
     .index("by_user", ["userId"])
-    .index("by_status", ["verificationStatus"]),
+    .index("by_status", ["verificationStatus"])
+    .index("by_nric", ["nricNumber"]),
 });
