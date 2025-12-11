@@ -36,13 +36,17 @@ export const createApplication = mutation({
       applicationDate: Date.now(),
     });
 
-    // Update user with phone number if not already set
+    // Update user with phone number if not already set, and set verification status to pending
     const user = await ctx.db.get(args.userId);
-    if (user && !user.phoneNumber) {
-      await ctx.db.patch(args.userId, {
-        phoneNumber: args.phoneNumber,
+    if (user) {
+      const updateFields: Record<string, any> = {
+        verificationStatus: "pending",
         updatedAt: Date.now(),
-      });
+      };
+      if (!user.phoneNumber) {
+        updateFields.phoneNumber = args.phoneNumber;
+      }
+      await ctx.db.patch(args.userId, updateFields);
     }
 
     return applicationId;
@@ -87,6 +91,7 @@ export const updateApplicationStatus = mutation({
       if (application) {
         await ctx.db.patch(application.userId, {
           myDigitalIdVerified: true,
+          verificationStatus: "verified",
           nricNumber: application.nricNumber,
           updatedAt: Date.now(),
         });
