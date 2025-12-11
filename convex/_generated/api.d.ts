@@ -9,7 +9,10 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as health from "../health.js";
+import type * as migration from "../migration.js";
 import type * as myDigitalId from "../myDigitalId.js";
+import type * as seed from "../seed.js";
 
 import type {
   ApiFromModules,
@@ -19,7 +22,10 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  health: typeof health;
+  migration: typeof migration;
   myDigitalId: typeof myDigitalId;
+  seed: typeof seed;
 }>;
 
 /**

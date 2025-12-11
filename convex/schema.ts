@@ -9,6 +9,19 @@ export default defineSchema({
     phoneNumber: v.optional(v.string()),
     nricNumber: v.optional(v.string()),
     myDigitalIdVerified: v.boolean(),
+    // Health profile fields
+    dateOfBirth: v.optional(v.string()),
+    gender: v.optional(v.string()),
+    bloodType: v.optional(v.string()),
+    allergies: v.optional(v.array(v.string())),
+    medicalConditions: v.optional(v.array(v.string())),
+    emergencyContactName: v.optional(v.string()),
+    emergencyContactPhone: v.optional(v.string()),
+    emergencyContactRelation: v.optional(v.string()),
+    // Profile completion tracking
+    profileCompleted: v.optional(v.boolean()),
+    // Verification status
+    verificationStatus: v.optional(v.union(v.literal("not-verified"), v.literal("verified"), v.literal("pending"))),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

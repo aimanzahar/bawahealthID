@@ -11,14 +11,20 @@ interface User {
   phoneNumber?: string;
   nricNumber?: string;
   myDigitalIdVerified: boolean;
+  verificationStatus?: 'not-verified' | 'verified' | 'pending';
+  profileCompleted?: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  profileLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name?: string) => Promise<User>;
   logout: () => void;
+  checkProfileCompletion: () => Promise<{ completed: boolean; verificationStatus: string }>;
+  refreshProfileStatus: () => void;
+  refreshUserData: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,6 +44,8 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileRefreshKey, setProfileRefreshKey] = useState(0);
 
   useEffect(() => {
     checkAuthStatus();
@@ -114,8 +122,42 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null);
   };
 
+  const checkProfileCompletion = async () => {
+    setProfileLoading(true);
+    try {
+      if (!user) {
+        return { completed: false, verificationStatus: 'not-verified' };
+      }
+      const result = await convex.query(api.health.checkProfileCompletion, { userId: user._id });
+      console.log('[AuthContext] Profile completion check:', result);
+      return result;
+    } catch (error: any) {
+      console.error('[AuthContext] Error checking profile completion:', error);
+      return { completed: false, verificationStatus: 'not-verified' };
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  const refreshProfileStatus = () => {
+    // Force a re-check of profile status by incrementing the key
+    setProfileRefreshKey(prev => prev + 1);
+  };
+
+  const refreshUserData = async () => {
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      if (userId) {
+        const userData = await convex.query(api.auth.getUser, { userId: userId as any });
+        setUser(userData);
+      }
+    } catch (error) {
+      console.error('[AuthContext] Error refreshing user data:', error);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, profileLoading, login, register, logout, checkProfileCompletion, refreshProfileStatus, refreshUserData }}>
       {children}
     </AuthContext.Provider>
   );

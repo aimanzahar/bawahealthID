@@ -25,6 +25,8 @@ export const signUp = mutation({
       password: args.password, // In production, hash this password
       name: args.name,
       myDigitalIdVerified: false,
+      profileCompleted: false,
+      verificationStatus: "not-verified",
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
@@ -56,6 +58,13 @@ export const signIn = mutation({
 
       // Get the user ID from the application
       const userId = application.userId;
+
+      // Update user to mark as verified via MyDigital ID
+      await ctx.db.patch(userId, {
+        myDigitalIdVerified: true,
+        verificationStatus: "verified",
+        updatedAt: Date.now(),
+      });
 
       // For now, accept any password for MyDigital ID login (implement proper verification later)
       // In production, you'd verify against MyDigital ID system

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,8 @@ import { RootStackParamList } from '../types/navigation';
 import Logo from '../components/Logo';
 import MalaysiaDigitalIDButton from '../components/MalaysiaDigitalIDButton';
 import { useAuth } from '../contexts/AuthContext';
+import { convex } from '../convex/client';
+import { api } from '../../convex/_generated/api';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -23,24 +25,23 @@ const { width, height } = Dimensions.get('window');
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(false);
   const { user, logout } = useAuth();
+  const [healthProfile, setHealthProfile] = useState<any>(null);
 
-  const handleMalaysiaIDLogin = () => {
-    setIsLoading(true);
+  useEffect(() => {
+    loadHealthProfile();
+  }, [user]);
 
-    // Simulate authentication process
-    setTimeout(() => {
-      setIsLoading(false);
-      Alert.alert(
-        'Authentication Successful',
-        'Welcome to BawaHealth! Your health records are now securely synchronized across all participating hospitals.',
-        [
-          {
-            text: 'Continue',
-            onPress: () => navigation.navigate('Details', { itemId: 'health-profile' })
-          }
-        ]
-      );
-    }, 2000);
+  const loadHealthProfile = async () => {
+    try {
+      if (!user) {
+        console.error('No user found when loading health profile');
+        return;
+      }
+      const profile = await convex.query(api.health.getHealthProfile, { userId: user._id });
+      setHealthProfile(profile);
+    } catch (error) {
+      console.error('Error loading health profile:', error);
+    }
   };
 
   const handleLogout = async () => {
@@ -123,7 +124,28 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
               <Text style={styles.greeting}>
                 {user ? `Hello, ${user.name || 'User'}!` : 'Good Morning!'}
               </Text>
-              <Text style={styles.welcomeText}>Welcome to BawaHealth</Text>
+              <View style={styles.verificationContainer}>
+                <Text style={styles.welcomeText}>Welcome to BawaHealth</Text>
+                {user?.verificationStatus && (
+                  <View style={[
+                    styles.verificationBadge,
+                    user.verificationStatus === 'verified' ? styles.verifiedBadge :
+                    user.verificationStatus === 'pending' ? styles.pendingBadge :
+                    styles.notVerifiedBadge
+                  ]}>
+                    <Text style={[
+                      styles.verificationText,
+                      user.verificationStatus === 'verified' ? styles.verifiedText :
+                      user.verificationStatus === 'pending' ? styles.pendingText :
+                      styles.notVerifiedText
+                    ]}>
+                      {user.verificationStatus === 'verified' ? '✓ Verified via MyDigital ID' :
+                       user.verificationStatus === 'pending' ? 'Pending Verification' :
+                       'Not Verified'}
+                    </Text>
+                  </View>
+                )}
+              </View>
             </View>
             <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
               <Text style={styles.logoutText}>Logout</Text>
@@ -133,19 +155,52 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Digital ID Login Section */}
-        <View style={styles.authSection}>
-          <View style={styles.authHeader}>
-            <Text style={styles.authTitle}>Your Health Passport</Text>
-            <Text style={styles.authSubtitle}>Sign in with your Malaysia Digital ID</Text>
+        {/* Health Profile Summary Section */}
+        <View style={styles.profileSection}>
+          <View style={styles.profileHeader}>
+            <Text style={styles.profileTitle}>Health Profile</Text>
+            <TouchableOpacity onPress={loadHealthProfile}>
+              <Text style={styles.refreshText}>Refresh</Text>
+            </TouchableOpacity>
           </View>
-          <MalaysiaDigitalIDButton
-            onPress={handleMalaysiaIDLogin}
-            isLoading={isLoading}
-          />
-          <View style={styles.securityBadge}>
-            <Text style={styles.securityText}>🔒 Protected by Bank Negara Malaysia</Text>
-          </View>
+
+          {healthProfile ? (
+            <View style={styles.profileContent}>
+              <View style={styles.profileRow}>
+                <Text style={styles.profileLabel}>Blood Type:</Text>
+                <Text style={styles.profileValue}>
+                  {healthProfile.bloodType || 'Not specified'}
+                </Text>
+              </View>
+
+              <View style={styles.profileRow}>
+                <Text style={styles.profileLabel}>Allergies:</Text>
+                <Text style={styles.profileValue}>
+                  {healthProfile.allergies?.length > 0
+                    ? `${healthProfile.allergies.length} recorded`
+                    : 'None recorded'}
+                </Text>
+              </View>
+
+              <View style={styles.profileRow}>
+                <Text style={styles.profileLabel}>Medical Conditions:</Text>
+                <Text style={styles.profileValue}>
+                  {healthProfile.medicalConditions?.length > 0
+                    ? `${healthProfile.medicalConditions.length} recorded`
+                    : 'None recorded'}
+                </Text>
+              </View>
+
+              <View style={styles.profileRow}>
+                <Text style={styles.profileLabel}>Emergency Contact:</Text>
+                <Text style={styles.profileValue}>
+                  {healthProfile.emergencyContactName || 'Not specified'}
+                </Text>
+              </View>
+            </View>
+          ) : (
+            <Text style={styles.noProfileText}>Loading health profile...</Text>
+          )}
         </View>
 
         {/* Quick Actions Grid */}
@@ -271,16 +326,48 @@ const styles = StyleSheet.create({
     marginLeft: 20,
     flex: 1,
   },
+  verificationContainer: {
+    marginTop: 4,
+  },
   greeting: {
     fontSize: 16,
     color: '#FFFFFF80',
     marginBottom: 4,
   },
   welcomeText: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
     color: '#FFFFFF',
     letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  verificationBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+  verifiedBadge: {
+    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+  },
+  pendingBadge: {
+    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+  },
+  notVerifiedBadge: {
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+  },
+  verificationText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  verifiedText: {
+    color: '#10B981',
+  },
+  pendingText: {
+    color: '#F59E0B',
+  },
+  notVerifiedText: {
+    color: '#EF4444',
   },
   logoutButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
@@ -300,7 +387,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     backgroundColor: '#F8FAFC',
   },
-  authSection: {
+  profileSection: {
     backgroundColor: '#FFFFFF',
     marginHorizontal: 20,
     marginTop: 20,
@@ -312,33 +399,47 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
   },
-  authHeader: {
-    marginBottom: 20,
+  profileHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 16,
   },
-  authTitle: {
-    fontSize: 22,
+  profileTitle: {
+    fontSize: 20,
     fontWeight: '700',
     color: '#1F2937',
-    marginBottom: 8,
   },
-  authSubtitle: {
+  refreshText: {
+    fontSize: 14,
+    color: '#0A6EBD',
+    fontWeight: '500',
+  },
+  profileContent: {
+    marginTop: 8,
+  },
+  profileRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  profileLabel: {
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  profileValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  noProfileText: {
     fontSize: 16,
     color: '#6B7280',
     textAlign: 'center',
-  },
-  securityBadge: {
-    marginTop: 16,
-    alignItems: 'center',
-    backgroundColor: '#F0F9FF',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-  },
-  securityText: {
-    fontSize: 12,
-    color: '#0A6EBD',
-    fontWeight: '500',
+    fontStyle: 'italic',
   },
   section: {
     marginTop: 30,

@@ -166,8 +166,8 @@ const MyDigitalIdRegisterScreen: React.FC<Props> = ({ navigation }) => {
           {
             text: 'OK',
             onPress: () => {
-              console.log('[MyDigitalIdRegister] Navigating to Home');
-              navigation.navigate('Home');
+              console.log('[MyDigitalIdRegister] Navigating to Login');
+              navigation.navigate('Login');
             },
           },
         ]

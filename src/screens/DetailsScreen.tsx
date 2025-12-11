@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,8 +10,11 @@ import {
   StatusBar,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/types';
+import { RootStackParamList } from '../types/navigation';
 import Logo from '../components/Logo';
+import { useAuth } from '../contexts/AuthContext';
+import { convex } from '../convex/client';
+import { api } from '../../convex/_generated/api';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Details'>;
 
@@ -26,50 +29,51 @@ interface HealthRecord {
 
 const DetailsScreen: React.FC<Props> = ({ route, navigation }) => {
   const { itemId } = route.params;
+  const { user } = useAuth();
   const [selectedTab, setSelectedTab] = useState('overview');
+  const [healthProfile, setHealthProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Mock health data
-  const healthRecords: HealthRecord[] = [
-    {
-      id: '1',
-      date: '15 Jan 2024',
-      hospital: 'Hospital Kuala Lumpur',
-      diagnosis: 'Annual Health Checkup',
-      doctor: 'Dr. Ahmad Rahman',
-      type: 'consultation',
-    },
-    {
-      id: '2',
-      date: '10 Jan 2024',
-      hospital: 'KPJ Damansara Specialist Hospital',
-      diagnosis: 'Complete Blood Count',
-      doctor: 'Dr. Sarah Lim',
-      type: 'lab-result',
-    },
-    {
-      id: '3',
-      date: '05 Jan 2024',
-      hospital: 'Subang Jaya Medical Centre',
-      diagnosis: 'Hypertension Management',
-      doctor: 'Dr. Kumar Raju',
-      type: 'prescription',
-    },
-    {
-      id: '4',
-      date: '28 Dec 2023',
-      hospital: 'Pantai Hospital Ampang',
-      diagnosis: 'Chest X-Ray',
-      doctor: 'Dr. Tan Mei Ling',
-      type: 'lab-result',
-    },
-  ];
+  useEffect(() => {
+    if (itemId === 'health-profile' && user) {
+      loadHealthProfile();
+    } else {
+      setLoading(false);
+    }
+  }, [itemId, user]);
 
-  const vitalSigns = [
-    { label: 'Blood Pressure', value: '120/80 mmHg', status: 'normal', icon: '💓' },
-    { label: 'Heart Rate', value: '72 bpm', status: 'normal', icon: '❤️' },
-    { label: 'Temperature', value: '36.8°C', status: 'normal', icon: '🌡️' },
-    { label: 'Oxygen Sat', value: '98%', status: 'normal', icon: '💨' },
-  ];
+  const loadHealthProfile = async () => {
+    try {
+      const profile = await convex.query(api.health.getHealthProfile, { userId: user._id });
+      setHealthProfile(profile);
+    } catch (error) {
+      console.error('Error loading health profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Calculate age from date of birth
+  const calculateAge = (dateOfBirth: string) => {
+    if (!dateOfBirth) return 'Not specified';
+    try {
+      // Assuming format DD/MM/YYYY
+      const parts = dateOfBirth.split('/');
+      const day = parseInt(parts[0]);
+      const month = parseInt(parts[1]) - 1; // JS months are 0-indexed
+      const year = parseInt(parts[2]);
+      const birthDate = new Date(year, month, day);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return `${age} years`;
+    } catch (error) {
+      return 'Not specified';
+    }
+  };
 
   const tabs = [
     { id: 'overview', label: 'Overview' },
@@ -79,16 +83,40 @@ const DetailsScreen: React.FC<Props> = ({ route, navigation }) => {
 
   const renderContent = () => {
     if (itemId === 'health-profile') {
+      if (loading) {
+        return (
+          <View style={[styles.profileContainer, { justifyContent: 'center', alignItems: 'center' }]}>
+            <Text style={styles.emptyStateText}>Loading health profile...</Text>
+          </View>
+        );
+      }
+
       return (
         <View style={styles.profileContainer}>
           {/* Profile Header */}
           <View style={styles.profileHeader}>
             <Logo size={100} showText={false} />
-            <Text style={styles.profileName}>John Doe</Text>
-            <Text style={styles.profileId}>Digital ID: 920101-01-1234</Text>
+            <Text style={styles.profileName}>{user?.name || 'User'}</Text>
+            <Text style={styles.profileId}>
+              {user?.nricNumber ? `Digital ID: ${user.nricNumber}` : user?.email || 'User'}
+            </Text>
             <View style={styles.profileBadges}>
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>Verified</Text>
+              <View style={[
+                styles.badge,
+                user?.verificationStatus === 'verified' ? styles.badgeVerified :
+                user?.verificationStatus === 'pending' ? styles.badgePending :
+                styles.badgeNotVerified
+              ]}>
+                <Text style={[
+                  styles.badgeText,
+                  user?.verificationStatus === 'verified' ? styles.badgeTextVerified :
+                  user?.verificationStatus === 'pending' ? styles.badgeTextPending :
+                  styles.badgeTextNotVerified
+                ]}>
+                  {user?.verificationStatus === 'verified' ? 'Verified' :
+                   user?.verificationStatus === 'pending' ? 'Pending' :
+                   'Not Verified'}
+                </Text>
               </View>
               <View style={[styles.badge, styles.badgePrimary]}>
                 <Text style={[styles.badgeText, styles.badgeTextPrimary]}>Active</Text>
@@ -126,27 +154,19 @@ const DetailsScreen: React.FC<Props> = ({ route, navigation }) => {
                 <View style={styles.infoGrid}>
                   <View style={styles.infoItem}>
                     <Text style={styles.infoLabel}>Age</Text>
-                    <Text style={styles.infoValue}>32 years</Text>
+                    <Text style={styles.infoValue}>{calculateAge(healthProfile?.dateOfBirth || '')}</Text>
                   </View>
                   <View style={styles.infoItem}>
                     <Text style={styles.infoLabel}>Gender</Text>
-                    <Text style={styles.infoValue}>Male</Text>
+                    <Text style={styles.infoValue}>{healthProfile?.gender || 'Not specified'}</Text>
                   </View>
                   <View style={styles.infoItem}>
                     <Text style={styles.infoLabel}>Blood Type</Text>
-                    <Text style={styles.infoValue}>O+</Text>
+                    <Text style={styles.infoValue}>{healthProfile?.bloodType || 'Not specified'}</Text>
                   </View>
                   <View style={styles.infoItem}>
-                    <Text style={styles.infoLabel}>Weight</Text>
-                    <Text style={styles.infoValue}>75 kg</Text>
-                  </View>
-                  <View style={styles.infoItem}>
-                    <Text style={styles.infoLabel}>Height</Text>
-                    <Text style={styles.infoValue}>175 cm</Text>
-                  </View>
-                  <View style={styles.infoItem}>
-                    <Text style={styles.infoLabel}>BMI</Text>
-                    <Text style={styles.infoValue}>24.5</Text>
+                    <Text style={styles.infoLabel}>Date of Birth</Text>
+                    <Text style={styles.infoValue}>{healthProfile?.dateOfBirth || 'Not specified'}</Text>
                   </View>
                 </View>
               </View>
@@ -155,24 +175,27 @@ const DetailsScreen: React.FC<Props> = ({ route, navigation }) => {
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Emergency Contact</Text>
                 <View style={styles.contactCard}>
-                  <Text style={styles.contactName}>Jane Doe</Text>
-                  <Text style={styles.contactRelation}>Wife</Text>
-                  <Text style={styles.contactPhone}>+60 12-345 6789</Text>
+                  <Text style={styles.contactName}>
+                    {healthProfile?.emergencyContactName || 'Not specified'}
+                  </Text>
+                  <Text style={styles.contactRelation}>
+                    {healthProfile?.emergencyContactRelation || 'Not specified'}
+                  </Text>
+                  <Text style={styles.contactPhone}>
+                    {healthProfile?.emergencyContactPhone || 'Not specified'}
+                  </Text>
                 </View>
               </View>
 
               {/* Vital Signs */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Latest Vital Signs</Text>
-                <View style={styles.vitalsGrid}>
-                  {vitalSigns.map((vital, index) => (
-                    <View key={index} style={styles.vitalCard}>
-                      <Text style={styles.vitalIcon}>{vital.icon}</Text>
-                      <Text style={styles.vitalValue}>{vital.value}</Text>
-                      <Text style={styles.vitalLabel}>{vital.label}</Text>
-                      <View style={styles.vitalStatus} />
-                    </View>
-                  ))}
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyStateIcon}>📊</Text>
+                  <Text style={styles.emptyStateText}>No vital signs recorded yet</Text>
+                  <Text style={styles.emptyStateSubtext}>
+                    Your vital signs will appear here once recorded by healthcare providers
+                  </Text>
                 </View>
               </View>
             </>
@@ -181,38 +204,25 @@ const DetailsScreen: React.FC<Props> = ({ route, navigation }) => {
           {selectedTab === 'records' && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Medical Records</Text>
-              {healthRecords.map((record) => (
-                <TouchableOpacity key={record.id} style={styles.recordCard}>
-                  <View style={styles.recordHeader}>
-                    <Text style={styles.recordDate}>{record.date}</Text>
-                    <View style={[styles.recordType, styles[record.type]]}>
-                      <Text style={[styles.recordTypeText, styles[record.type]]}>
-                        {record.type.replace('-', ' ')}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={styles.recordHospital}>{record.hospital}</Text>
-                  <Text style={styles.recordDiagnosis}>{record.diagnosis}</Text>
-                  <Text style={styles.recordDoctor}>Dr. {record.doctor}</Text>
-                </TouchableOpacity>
-              ))}
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateIcon}>📁</Text>
+                <Text style={styles.emptyStateText}>No medical records available</Text>
+                <Text style={styles.emptyStateSubtext}>
+                  Your medical records will appear here once you have hospital visits
+                </Text>
+              </View>
             </View>
           )}
 
           {selectedTab === 'medications' && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Current Medications</Text>
-              <View style={styles.medicationCard}>
-                <Text style={styles.medicationName}>Amlodipine 5mg</Text>
-                <Text style={styles.medicationDosage}>Once daily</Text>
-                <Text style={styles.medicationPurpose}>For blood pressure</Text>
-                <Text style={styles.medicationDoctor}>Prescribed by Dr. Kumar Raju</Text>
-              </View>
-              <View style={styles.medicationCard}>
-                <Text style={styles.medicationName}>Vitamin D3 1000 IU</Text>
-                <Text style={styles.medicationDosage}>Once daily</Text>
-                <Text style={styles.medicationPurpose}>Supplement</Text>
-                <Text style={styles.medicationDoctor}>Prescribed by Dr. Ahmad Rahman</Text>
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateIcon}>💊</Text>
+                <Text style={styles.emptyStateText}>No current medications</Text>
+                <Text style={styles.emptyStateSubtext}>
+                  Your prescriptions will appear here once prescribed by healthcare providers
+                </Text>
               </View>
             </View>
           )}
@@ -335,12 +345,30 @@ const styles = StyleSheet.create({
   badgePrimary: {
     backgroundColor: '#0A6EBD',
   },
+  badgeVerified: {
+    backgroundColor: '#10B981',
+  },
+  badgePending: {
+    backgroundColor: '#F59E0B',
+  },
+  badgeNotVerified: {
+    backgroundColor: '#EF4444',
+  },
   badgeText: {
     fontSize: 14,
     fontWeight: '600',
     color: '#6B7280',
   },
   badgeTextPrimary: {
+    color: '#FFFFFF',
+  },
+  badgeTextVerified: {
+    color: '#FFFFFF',
+  },
+  badgeTextPending: {
+    color: '#FFFFFF',
+  },
+  badgeTextNotVerified: {
     color: '#FFFFFF',
   },
   tabsContainer: {
@@ -604,6 +632,33 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '700',
+  },
+  emptyState: {
+    backgroundColor: '#FFFFFF',
+    padding: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  emptyStateIcon: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 8,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });
 
